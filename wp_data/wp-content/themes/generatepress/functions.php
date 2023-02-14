@@ -323,7 +323,6 @@ function searchjs(){
 									PaginationHtml += response.pagination;
 									PaginationHtml += '</div>';
 						}
-
 					//!data pagination
 						postsPagination.innerHTML = PaginationHtml;
 					//$('#data-search').empty().append(res);
