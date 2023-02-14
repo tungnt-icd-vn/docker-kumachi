@@ -227,7 +227,14 @@ function searchHandlerData() {
 			echo "</div>";
 	}
   wp_reset_query();
-  echo $response;
+		$return = array(
+			'data'  => $response,
+			'total'       => 1
+		);
+		var_dump($return);
+		die();
+	wp_send_json($return);
+ // echo $response;
   exit;
 }
 add_action('wp_ajax_searchHandlerData', 'searchHandlerData');
@@ -253,7 +260,7 @@ function searchjs(){
 		jQuery.ajax({
 				type: 'POST',
 				url: '/wp-admin/admin-ajax.php',
-				dataType: 'html',
+				dataType: 'json',
 				cache: false,
 				data: {
 					action: 'searchHandlerData',
@@ -268,8 +275,9 @@ function searchjs(){
 					console.log(dataPaged);
         },
 				success: function (res) {
-					console.log(res);
-					$('#data-search').empty().append(res);
+					var json =  JSON.parse(res);
+					console.log(json.data);
+					//$('#data-search').empty().append(res);
 				}
 			});
 		});
