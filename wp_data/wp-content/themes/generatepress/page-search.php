@@ -62,7 +62,8 @@ get_header(); ?>
           <option  value='asc'>ASC</option>
     </select>
     <div id="data-count"></div>
-    <div id="data-search">xxx</div>
+    <div id="data-search"></div>
+    <div id="data-pagination"></div>
     <!-- //data -->
 
   </main>

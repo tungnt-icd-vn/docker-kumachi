@@ -162,6 +162,8 @@ function normalizeInputPaged($data){
  */
 function searchHandlerData() {
 	//initialize && normalized data input
+	$page_size = 10;
+	$offset = ( $page - 1 ) * $page_size;
 	$paramsKeyword= $_POST['paramsKeyword'] ? normalizeInputString($_POST['paramsKeyword']) : null;
 	$paramsYear= $_POST['paramsYear'] ? normalizeInputNumber($_POST['paramsYear']) : null;
 	$paramsMonth= $_POST['paramsMonth'] ? normalizeInputNumber($_POST['paramsMonth']) : null;
@@ -172,14 +174,13 @@ function searchHandlerData() {
 	$params = array(
     'post_type' => 'post',
 		'post_status' => 'publish',
-		'posts_per_page' => 100,
 		'monthnum' => $paramsMonth,
 		'year' => $paramsYear,
 		's' => $paramsKeyword,
 		'orderby' => 'ID',
 		'order' => $paramsOrderBy,
 		'paged' => $paged,
-		'posts_per_page' => 5,
+		'posts_per_page' => $page_size,
   );
 	if(is_array($paramsCategory)){
 		$params['tax_query']= array(
@@ -191,14 +192,22 @@ function searchHandlerData() {
 		);
 	}
   $dataPost = new WP_Query($params);
-  $response = '';
+  $results  = array();
   if ( $dataPost->have_posts() ) :
     while ( $dataPost->have_posts() ) : $dataPost->the_post();
-      $response .= get_template_part('content');
+      $result  = array(
+				'title' => get_the_title(),
+				'permalink' => get_permalink(),
+				'excerpt' => get_the_excerpt(),
+				'images' => get_the_post_thumbnail()
+			);
+			array_push($results, $result);
     endwhile;
   else  :
-     $response = 'No Post';
+     $results  = null;
   endif;
+	$total_posts  = $dataPost->found_posts;
+	$total_pages = ceil( $total_posts / $page_size );
 	$nextpage = $paged+1;
 			$prevouspage = $paged-1;
 			$total = $dataPost->max_num_pages;
@@ -221,20 +230,20 @@ function searchHandlerData() {
 	);
 	$paginate_links = paginate_links($pagination_args);
 	$paginate_links = str_replace('href=', 'href="#" data-paged=', $paginate_links);
-	if ($paginate_links) {
-			echo "<div id='pagination' class='pagination ajax_pagination'>";
-			echo $paginate_links;
-			echo "</div>";
-	}
+	// if ($paginate_links) {
+	// // 		echo "<div id='pagination' class='pagination ajax_pagination'>";
+	// // 		echo $paginate_links;
+	// // 		echo "</div>";
+	// }
+	$response = array(
+    'total_posts' => $total_posts,
+    'total_pages' => $total_pages,
+    'current_page' => $paged,
+    'posts' => $results,
+		'pagination' => $paginate_links
+	);
+	echo json_encode( $response );
   wp_reset_query();
-		$return = array(
-			'data'  => $response,
-			'total'       => 1
-		);
-		var_dump($return);
-		die();
-	wp_send_json($return);
- // echo $response;
   exit;
 }
 add_action('wp_ajax_searchHandlerData', 'searchHandlerData');
@@ -274,9 +283,49 @@ function searchjs(){
 				beforeSend: function() {
 					console.log(dataPaged);
         },
-				success: function (res) {
-					var json =  JSON.parse(res);
-					console.log(json.data);
+				success: function (response ) {
+					// data post
+						var postsContainer = document.getElementById( 'data-search' );
+						var postsHtml = '';
+						if(response.posts instanceof Array){
+							for ( var i = 0; i < response.posts.length; i++ ) {
+									var post = response.posts[i];
+									var postHtml = '<div class="post">';
+									postHtml += '<h2>' + post.title + '</h2>';
+									postHtml += '<p>' + post.excerpt + '</p>';
+									postHtml += '<a href="' + post.permalink + '">Read more</a>';
+									postHtml += '</div>';
+									postsHtml += postHtml;
+							}
+						}
+						else {
+							var postHtml = '<p class="post"> No Post </p>';
+							postsHtml += postHtml;
+						}
+						postsContainer.innerHTML = postsHtml;
+					// !data post
+					// data count
+						var postsCount = document.getElementById( 'data-count' );
+						var countHtml = '';
+						if(response.total_posts){
+							var countHtml = '<h2>' + response.total_posts + '</h2>';
+						}
+						else{
+							var countHtml = 0;
+						}
+						postsCount.innerHTML = countHtml;
+					// !data count
+					//data pagination
+						var postsPagination = document.getElementById( 'data-pagination' );
+						var PaginationHtml = '';
+						if(response.pagination){
+							var PaginationHtml = '<div id="pagination" class="pagination ajax_pagination">';
+									PaginationHtml += response.pagination;
+									PaginationHtml += '</div>';
+						}
+
+					//!data pagination
+						postsPagination.innerHTML = PaginationHtml;
 					//$('#data-search').empty().append(res);
 				}
 			});
