@@ -230,11 +230,6 @@ function searchHandlerData() {
 	);
 	$paginate_links = paginate_links($pagination_args);
 	$paginate_links = str_replace('href=', 'href="#" data-paged=', $paginate_links);
-	// if ($paginate_links) {
-	// // 		echo "<div id='pagination' class='pagination ajax_pagination'>";
-	// // 		echo $paginate_links;
-	// // 		echo "</div>";
-	// }
 	$response = array(
     'total_posts' => $total_posts,
     'total_pages' => $total_pages,
